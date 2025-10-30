@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>10 Hz 黑白闪烁（Canvas版，Safari可用）</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: sans-serif;
+  }
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  #start {
+    z-index: 10;
+    position: relative;
+    padding: 1em 2em;
+    font-size: 1.2em;
+    border: 2px solid white;
+    background: none;
+    color: white;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+  <button id="start">开始 10 Hz 闪烁（30分钟自动停止）</button>
+  <canvas id="screen"></canvas>
+
+<script>
+const canvas = document.getElementById('screen');
+const ctx = canvas.getContext('2d');
+let flickering = false;
+let lastSwitch = 0;
+let color = 0; // 0:黑, 1:白
+let stopTime = 0;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function draw() {
+  if (!flickering) return;
+  const now = performance.now();
+  if (now - lastSwitch >= 100) { // 10Hz = 每100ms切换一次
+    color = 1 - color;
+    ctx.fillStyle = color ? 'white' : 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    lastSwitch = now;
+  }
+  if (now < stopTime) {
+    requestAnimationFrame(draw);
+  } else {
+    flickering = false;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    document.body.innerHTML = '<p style="color:white;">闪烁结束（30分钟到或手动停止）</p>';
+  }
+}
+
+document.getElementById('start').addEventListener('click', () => {
+  if (flickering) return;
+  flickering = true;
+  lastSwitch = performance.now();
+  stopTime = lastSwitch + 30 * 60 * 1000; // 30分钟
+  document.getElementById('start').style.display = 'none';
+  requestAnimationFrame(draw);
+});
+
+// 点击屏幕任意位置手动停止
+document.body.addEventListener('click', () => {
+  if (flickering) {
+    flickering = false;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    document.body.innerHTML = '<p style="color:white;">闪烁手动停止</p>';
+  }
+});
+</script>
+</body>
+</html>
